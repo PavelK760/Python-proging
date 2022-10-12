@@ -1,0 +1,114 @@
+import csv
+import re
+
+file_name = input()
+file_csv = open(file_name, encoding='utf_8_sig')
+csv_reader = csv.DictReader(file_csv)
+
+
+def clean(vacancy):
+    cleaner = re.compile('<.*?>')
+    vacancy = re.sub(cleaner, '', vacancy)
+    vacancy = '; '.join(vacancy.split('\n'))
+    vacancy = ''.join(vacancy.split('\r'))
+    vacancy = ' '.join(vacancy.split())
+    return vacancy
+
+def print_salary(text, salaries, start, step):
+    print(text + ':', sep='')
+    length = 10 if len(salaries) >= 10 else len(salaries)
+    end = start + length * step
+    counter = 1
+    for i in range(start, end, step):
+        name = salaries[i]['name']
+        company_name = salaries[i]['employer_name']
+        biggest_salary = (int(float(salaries[i]['salary_from'])) + int(float(salaries[i]['salary_to']))) // 2
+        city = salaries[i]['area_name']
+        rubles = ['рубль', 'рубля', 'рублей']
+        print(
+            f'    {counter}) {name} в компании "{company_name}" - {biggest_salary} {change_word(biggest_salary, rubles)} (г. {city})')
+        counter += 1
+
+
+def print_skills(skills):
+    length = 10 if len(skills) >= 10 else len(skills)
+    print(f'Из {len(skills)} скиллов, самыми популярными являются:')
+    times = ['раз', 'раза', 'раз']
+    for i in range(length):
+        skill = skills[i][0]
+        mentions = skills[i][1]
+        print(f'    {i + 1}) {skill} - упоминается {mentions} {change_word(mentions, times)}')
+
+
+def print_salary_by_city(salary_by_city, city_count):
+    length = 10 if len(salary_by_city) >= 10 else len(salary_by_city)
+    print(f'Из {city_count} городов, самые высокие средние ЗП:')
+    words = ['рубль', 'рубля', 'рублей']
+    words1 = ['вакансия', 'вакансии', 'вакансий']
+    for i in range(length):
+        city = salary_by_city[i][0]
+        average_salary = salary_by_city[i][1]
+        vacancies = salary_by_city[i][2]
+        print(
+            f'    {i + 1}) {city} - средняя зарплата {average_salary} {change_word(average_salary, words)} ({vacancies} {change_word(vacancies, words1)})')
+
+
+def change_word(inp, list):
+    if inp % 10 == 1 and inp % 100 not in range(10, 20):
+        return list[0]
+    elif inp % 10 in range(2, 5) and inp % 100 not in range(10, 20):
+        return list[1]
+    return list[2]
+
+vacancy_list = []
+for vacancy in csv_reader:
+    if '' not in vacancy.values() and len(vacancy.values()) == len(vacancy) and 'RUR' in vacancy.values():
+        for k, v in vacancy.items():
+            vacancy[k] = clean(v)
+        vacancy_list.append(vacancy)
+
+vacancies_by_salary = sorted(vacancy_list, key=lambda value:
+                                                    (int(float(value['salary_from'])) + int(float(value["salary_to"]))) // 2,
+                                                    reverse=True)
+lowest_salaries = sorted(vacancy_list, key=lambda value:
+                                                    (int(float(value['salary_from']))
+                                                     + int(float(value["salary_to"]))) // 2)
+
+skills = {}
+for v in vacancy_list:
+    for i in v['key_skills'].split('; '):
+        if i in skills.keys():
+            skills[i] += 1
+        else:
+            skills[i] = 1
+sorted_skills = sorted(skills.items(), key=lambda skill: skill[1], reverse=True)
+
+vacancies_amount = len(vacancy_list)
+city_amount = {}
+for vacancy in vacancy_list:
+    city = vacancy['area_name']
+    if city not in city_amount.keys():
+        city_amount[city] = 1
+    city_amount[city] += 1
+vacancy_list = [val for val in vacancy_list if round(city_amount[val['area_name']] / vacancies_amount, 3) >= 0.01]
+
+vacancies_by_city = {}
+for vacancy in vacancy_list:
+    city = vacancy['area_name']
+    aver_salary = (int(float(vacancy['salary_from'])) + int(float(vacancy['salary_to']))) // 2
+    if city not in vacancies_by_city.keys():
+        vacancies_by_city[city] = [aver_salary, 1]
+    else:
+        vacancies_by_city[city][0] += aver_salary
+        vacancies_by_city[city][1] += 1
+
+vacancies_by_city = list((k, vac[0] // vac[1], vac[1]) for k, vac in vacancies_by_city.items())
+vacancies_by_city = sorted(vacancies_by_city, key=lambda city: city[1], reverse=True)
+
+print_salary('Самые высокие зарплаты', vacancies_by_salary, 0, 1)
+print()
+print_salary('Самые низкие зарплаты', lowest_salaries, 0, 1)
+print()
+print_skills(sorted_skills)
+print()
+print_salary_by_city(vacancies_by_city, len(city_amount))
