@@ -1,0 +1,42 @@
+import csv
+import re
+
+def сsv_reader(file_name):
+    with open(file_name, encoding='UTF-8-sig') as csvfile:
+        r = csv.reader(csvfile)
+        h = next(r)
+        d = []
+        for item in r:
+            if '' not in item and len(item) == len(h):
+                d.append(item)
+        return h, d
+
+def csv_filer(reader, list_naming):
+    list = []
+    for item in reader:
+        data_vacansies = {}
+        for j in range(len(item)):
+            if '\n' in item[j]:
+                item[j] = item[j].replace('\n', ', ')
+            item[j] = re.sub(r'<[^>]*>', '', item[j])
+            item[j] = ' '.join(item[j].split())
+            if item[j] == 'True':
+                item[j] = "Да"
+            elif item[j] == 'False':
+                item[j] = "Нет"
+        for key, value in zip(list_naming, item):
+            data_vacansies[key] = value
+        list.append(data_vacansies)
+    return list
+
+def print_vacancies(data_vacancies, dic_naming):
+    for item in data_vacancies:
+        for i in dic_naming:
+            print(f'{dic_naming[i]}: {item[i]}')
+        print()
+
+# = csv_filer(data,header)
+dic_naming = {'name' : "Название", 'description' : "Описание", 'key_skills' : "Навыки", 'experience_id' : "Опыт работы", 'premium' : "Премиум-вакансия", 'employer_name' : "Компания", 'salary_from' : "Нижняя граница вилки оклада", 'salary_to': "Верхняя граница вилки оклада", 'salary_gross': "Оклад указан до вычета налогов", 'salary_currency': "Идентификатор валюты оклада", 'area_name': "Название региона", 'published_at': "Дата и время публикации вакансии"}
+header, data = сsv_reader(input())
+vacansies_info = csv_filer(data, header)
+print_vacancies(vacansies_info, dic_naming)
