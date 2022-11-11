@@ -1,0 +1,76 @@
+```Python
+		import copy
+    import csv
+    import re
+
+    def formatter(row):
+       f_dict = copy.copy(row)
+       salary_list = []
+      for key in row:
+           if row[key] in yes_no:
+               f_dict[key] = yes_no[row[key]]
+           if row[key] in exp:
+                f_dict[key] = exp[row[key]]
+            if key == 'salary_from':
+               salary_list.append(row[key])
+           if key == 'salary_to' or key == 'salary_currency' or key == 'salary_gross':
+                salary_list.append(row[key])
+                del f_dict[key]
+        str = ''
+        for i in range(2):
+            salary_list[i] = salary_list[i].replace('.0', '')
+           salary_list[i] = f'{int(salary_list[i]):_}'.replace('_', ' ')
+       str += salary_list[0] + ' - ' + salary_list[1]
+       str += ' (' + currency[salary_list[3]] + ')'
+       nalogi = {'False': ' (С вычетом налогов)', 'True': ' (Без вычета налогов)'}
+      str += nalogi[salary_list[2]]
+       f_dict['salary_from'] = str
+        str = f_dict['published_at'][:10]
+       str = str[-2:] + '.' + str[-5:-3] + '.' + str[:4]
+       f_dict['published_at'] = str
+        return f_dict
+  
+    def сsv_reader(file_name):
+       with open(file_name, encoding='UTF-8-sig') as csvfile:
+           r = csv.reader(csvfile)
+            h = next(r)
+            d = []
+            for item in r:
+                if '' not in item and len(item) == len(h):
+                    d.append(item)
+           return h, d
+
+    def csv_filer(reader, list_naming):
+        list = []
+        for item in reader:
+            data_vacansies = {}
+           for j in range(len(item)):
+               if '\n' in item[j]:
+                   item[j] = item[j].replace('\n', ', ')
+                item[j] = re.sub(r'<[^>]*>', '', item[j])
+                 item[j] = ' '.join(item[j].split())
+
+            for key, value in zip(list_naming, item):
+                data_vacansies[key] = value
+            list.append(data_vacansies)
+       return list
+
+    def print_vacancies(data_vacancies, dic_naming):
+       for item in data_vacancies:
+           d = formatter(item)
+            for i in dic_naming:
+               print(f'{dic_naming[i]}: {d[i]}')
+            print()
+
+    currency = {"AZN": "Манаты", "BYR": "Белорусские рубли", "EUR": "Евро", "GEL": "Грузинский лари", "KGS": "Киргизский сом", "KZT": "Тенге", "RUR": "Рубли", "UAH": "Гривны", "USD": "Доллары", "UZS": "Узбекский сум"}
+    yes_no = {'False': 'Нет', 'True': 'Да'}
+    exp = {"noExperience": "Нет опыта",
+          "between1And3": "От 1 года до 3 лет",
+          "between3And6": "От 3 до 6 лет",
+          "moreThan6": "Более 6 лет"}
+    # = csv_filer(data,header)
+    dic_naming = {'name' : "Название", 'description' : "Описание", 'key_skills' : "Навыки", 'experience_id' : "Опыт работы", 'premium' : "Премиум-вакансия", 'employer_name' : "Компания", 'salary_from' : 'Оклад', 'area_name': "Название региона", 'published_at': "Дата публикации вакансии"}
+    header, data = сsv_reader(input())
+    vacansies_info = csv_filer(data, header)
+    print_vacancies(vacansies_info, dic_naming)
+```
