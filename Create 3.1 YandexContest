@@ -2,42 +2,108 @@ import copy
 import csv
 import re
 
+def formatter(Paragraph):
+    formDic = copy.copy(Paragraph)
+    listOfSalaries = []
+    NewString = ''
+    formater_dic_filler(Paragraph, formDic, listOfSalaries)
+    StrSalary_To_IntSalary(listOfSalaries)
+
+    NewString += f'{listOfSalaries[0]} - {listOfSalaries[1]} ({Valutes[listOfSalaries[3]]})'
+    texDec = {'False': ' (С вычетом налогов)', 'True': ' (Без вычета налогов)'}
+    NewString += texDec[listOfSalaries[2]]
+    #Заменили все символы в строке, теперь запишем новый файл в словарь (выбор ключа костыльный, просто чтобы потом не мучиться)
+    formDic['salary_from'] = NewString
+    NewString = formDic['published_at'][:10]
+    #красиво записать дату
+    NewString = NewString[-2:] + '.' + NewString[-5:-3] + '.' + NewString[:4]
+    formDic['published_at'] = NewString
+    return formDic
+
+
+def StrSalary_To_IntSalary(listOfSalaries):
+    for i in range(2):
+        listOfSalaries[i] = listOfSalaries[i].replace('.0', '')
+        listOfSalaries[i] = f'{int(listOfSalaries[i]):_}'
+        listOfSalaries[i] = listOfSalaries[i].replace('_', ' ')
+
+
+def formater_dic_filler(Paragraph, formDic, listOfSalaries):
+    for ind in Paragraph:
+        # Сперва проходим по всем пунктам и заполняем новый словарь необходимыми в будущем параметрами
+        if Paragraph[ind] in Expirience:
+            formDic[ind] = Expirience[Paragraph[ind]]
+        if Paragraph[ind] in True_False:
+            formDic[ind] = True_False[Paragraph[ind]]
+        if ind == 'salary_from':
+            listOfSalaries.append(Paragraph[ind])
+        if ind == 'salary_to' \
+                or ind == 'salary_currency' \
+                or ind == 'salary_gross':
+            listOfSalaries.append(Paragraph[ind])
+            del formDic[ind]
+        # Выше мы записали все нужные параметры касающиеся ЗП, теперь оторматируем их и можно тоже помещать в новый словарь
+
+
 def сsv_reader(file_name):
     with open(file_name, encoding='UTF-8-sig') as csvfile:
-        r = csv.reader(csvfile)
-        h = next(r)
-        d = []
-        for item in r:
-            if '' not in item and len(item) == len(h):
-                d.append(item)
-        return h, d
+        file = csv.reader(csvfile)
+        header = next(file)
+        list = []
+        for item in file:
+            if '' not in item and len(item) == len(header):
+                list.append(item)
+        return header, list
 
 def csv_filer(reader, list_naming):
-    list = []
-    for item in reader:
-        data_vacansies = {}
-        for j in range(len(item)):
-            if '\n' in item[j]:
-                item[j] = item[j].replace('\n', ', ')
-            item[j] = re.sub(r'<[^>]*>', '', item[j])
-            item[j] = ' '.join(item[j].split())
-            if item[j] == 'True':
-                item[j] = "Да"
-            elif item[j] == 'False':
-                item[j] = "Нет"
-        for key, value in zip(list_naming, item):
-            data_vacansies[key] = value
-        list.append(data_vacansies)
-    return list
+    NewText = []
+    for word in reader:
+        dict_vacansies = {}
+        elements_replacer(word)
+        dic_filler(NewText, dict_vacansies, list_naming, word)
+    return NewText
+
+
+def elements_replacer(word):
+    for j in range(len(word)):
+        word[j] = re.sub(r'<[^>]*>', '', word[j])
+        if '\n' in word[j]: word[j] = word[j].replace('\n', ', ')
+        word[j] = ' '.join(word[j].split())
+
+
+def dic_filler(NewText, dict_vacansies, list_naming, word):
+    for key, Val in zip(list_naming, word):
+        dict_vacansies[key] = Val
+    NewText.append(dict_vacansies)
+
 
 def print_vacancies(data_vacancies, dic_naming):
     for item in data_vacancies:
-        for i in dic_naming:
-            print(f'{dic_naming[i]}: {item[i]}')
-        print()
+        d = formatter(item)
+        RightPrint(d, dic_naming)
 
-# = csv_filer(data,header)
-dic_naming = {'name' : "Название", 'description' : "Описание", 'key_skills' : "Навыки", 'experience_id' : "Опыт работы", 'premium' : "Премиум-вакансия", 'employer_name' : "Компания", 'salary_from' : "Нижняя граница вилки оклада", 'salary_to': "Верхняя граница вилки оклада", 'salary_gross': "Оклад указан до вычета налогов", 'salary_currency': "Идентификатор валюты оклада", 'area_name': "Название региона", 'published_at': "Дата и время публикации вакансии"}
-header, data = сsv_reader(input())
-vacansies_info = csv_filer(data, header)
-print_vacancies(vacansies_info, dic_naming)
+
+def RightPrint(d, dic_naming):
+    for i in dic_naming:
+        print(f'{dic_naming[i]}: {d[i]}')
+    print()
+
+
+#Прописать все значения, которые придётся заменить, проще в словари, так что так и поступим
+Expirience = {"noExperience": "Нет опыта", "between1And3": "От 1 года до 3 лет",
+       "between3And6": "От 3 до 6 лет", "moreThan6": "Более 6 лет"}
+True_False = {'True': 'Да', 'False': 'Нет'}
+Valutes = {"AZN": "Манаты", "BYR": "Белорусские рубли", "EUR": "Евро",
+           "GEL": "Грузинский лари", "KGS": "Киргизский сом", "KZT": "Тенге",
+           "RUR": "Рубли", "UAH": "Гривны", "USD": "Доллары", "UZS": "Узбекский сум"}
+
+
+dic_keys_translations = {'name' : "Название", 'description' : "Описание", 'key_skills' : "Навыки",
+                         'experience_id' : "Опыт работы", 'premium' : "Премиум-вакансия",
+                         'employer_name' : "Компания", 'salary_from' : 'Оклад', 'area_name': "Название региона",
+                         'published_at': "Дата публикации вакансии"}
+
+#чисто строчки с вызовами методов
+header, vacancies_data = сsv_reader(input())
+vacansies_main = csv_filer(vacancies_data, header)
+print_vacancies(vacansies_main, dic_keys_translations)
