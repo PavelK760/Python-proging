@@ -240,8 +240,7 @@ PT_print_end = (int(PT_print_start[1]) - 1) if (len(PT_print_start) == 2 and PT_
 PT_print_start = (int(PT_print_start[0]) - 1) if PT_print_start[0] != "" else 0
 
 
-if Empty:
-    output = 'Ничего не найдено таблицу не печатать'
+
 if len(header) == 0:
     output = "Пустой файл"
 elif len(data) == 0:
